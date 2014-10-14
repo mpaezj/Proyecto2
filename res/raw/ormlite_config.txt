@@ -1,0 +1,44 @@
+#
+# generated on 2014/09/12 08:40:27
+#
+# --table-start--
+dataClass=com.example.proyecto1.materias
+tableName=materias
+# --table-fields-start--
+# --field-start--
+fieldName=nombre
+id=true
+# --field-end--
+# --field-start--
+fieldName=creditos
+# --field-end--
+# --field-start--
+fieldName=nota
+# --field-end--
+# --table-fields-end--
+# --table-end--
+#################################
+# --table-start--
+dataClass=com.example.proyecto1.notas
+tableName=notas
+# --table-fields-start--
+# --field-start--
+fieldName=nombremateria
+foreign=true
+# --field-end--
+# --field-start--
+fieldName=materianota
+id=true
+# --field-end--
+# --field-start--
+fieldName=nombre
+# --field-end--
+# --field-start--
+fieldName=creditos
+# --field-end--
+# --field-start--
+fieldName=nota
+# --field-end--
+# --table-fields-end--
+# --table-end--
+#################################
