@@ -2,6 +2,7 @@ package com.example.proyecto1;
 
 
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,6 +14,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -80,23 +86,23 @@ public class agregarmateria extends Fragment {
 						RuntimeExceptionDao<materias, String> materiasDao = helper.getMateriaRuntimeDao();
 						materias materia = new materias(snombre,Integer.parseInt(screditos));
 						materiasDao.create(materia);
+						//JSONArray jsonPosts = mData.getJSONArray("materias");
 						
-						JSONArray jsonPosts = mData.getJSONArray("notas");
-						ArrayList<HashMap<String, String>> blogPosts = new ArrayList<HashMap<String,String>>();
-						ArrayList<String> nombres= new ArrayList<String>();
-						for (int i = 0;i< jsonPosts.length();i++){
-							JSONObject post = jsonPosts.getJSONObject(i);
-							String nombre = Html.fromHtml(post.getString("seccion_codigo")).toString();
-							if(nombre.equalsIgnoreCase(sp.getSelectedItem().toString())){
-								helper = OpenHelperManager.getHelper(rootView.getContext(),helper.class);
-								RuntimeExceptionDao<notas, String> notassDao = helper.getNotasRuntimeDao();
-								notas nota = new notas(materia ,Html.fromHtml(post.getString("nota_nombre")).toString(), Integer.parseInt(Html.fromHtml(post.getString("nota_porcentaje")).toString()));
-								notassDao.create(nota);
-								Toast.makeText(rootView.getContext(),"Nota agregada exitosamente" , Toast.LENGTH_SHORT).show();
-								getActivity().getSupportFragmentManager().popBackStack();
-							}
-												
+						
+						int i = (int) sp.getSelectedItemId();
+						JSONArray jsonPosts = mData.getJSONArray("materias").getJSONObject(i).getJSONArray("componetes");
+										
+						for (int j = 0;j< jsonPosts.length();j++){
+							JSONObject post = jsonPosts.getJSONObject(j);
+							helper = OpenHelperManager.getHelper(rootView.getContext(),helper.class);
+							RuntimeExceptionDao<notas, String> notassDao = helper.getNotasRuntimeDao();
+							notas nota = new notas(materia ,Html.fromHtml(post.getString("desc")).toString(), Integer.parseInt(Html.fromHtml(post.getString("peso")).toString()));
+							notassDao.create(nota);
+							Toast.makeText(rootView.getContext(),"Nota agregada exitosamente" , Toast.LENGTH_SHORT).show();
+							getActivity().getSupportFragmentManager().popBackStack();
 						}
+												
+						//}
 						Toast.makeText(rootView.getContext(),"Materia agregada exitosamente" , Toast.LENGTH_SHORT).show();
 						getActivity().getSupportFragmentManager().popBackStack();
 
@@ -152,19 +158,18 @@ public class agregarmateria extends Fragment {
 			//updateDisplayForError();
 		} else {
 			try {
-				JSONArray jsonPosts = mData.getJSONArray("notas");
+				JSONArray jsonPosts = mData.getJSONArray("materias");
 				ArrayList<HashMap<String, String>> blogPosts = new ArrayList<HashMap<String,String>>();
 				ArrayList<String> nombres= new ArrayList<String>();
 				for (int i = 0;i< jsonPosts.length();i++){
 					JSONObject post = jsonPosts.getJSONObject(i);
-					String nombre = post.getString("seccion_codigo");
+					String nombre = post.getString("nombre_materia");
 					nombre = Html.fromHtml(nombre).toString();
-					nombres.add(nombre);
+					String periodo = post.getString("periodo");
+					periodo = Html.fromHtml(periodo).toString();
+					nombres.add(nombre+" "+periodo);
 										
 				}
-				HashSet<String> hashSet = new HashSet<String>(nombres);
-				nombres.clear();
-				nombres.addAll(hashSet);
 				ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(mContext, android.R.layout.simple_spinner_item, nombres); //selected item will look like a spinner set from XML
 				spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 				sp.setAdapter(spinnerArrayAdapter);
@@ -178,43 +183,54 @@ public class agregarmateria extends Fragment {
 	}
 
 	
+public static JSONObject getJson(String url){
+		
+		InputStream is = null;
+		String result = "";
+		JSONObject jsonObject = null;
+		
+		// HTTP
+		try {	    	
+			HttpClient httpclient = new DefaultHttpClient(); // for port 80 requests!
+			HttpGet httppost = new HttpGet(url);
+			HttpResponse response = httpclient.execute(httppost);
+			HttpEntity entity = response.getEntity();
+			is = entity.getContent();
+		} catch(Exception e) {
+			return null;
+		}
+	    
+		// Read response to string
+		try {	    	
+			BufferedReader reader = new BufferedReader(new InputStreamReader(is,"utf-8"),8);
+			StringBuilder sb = new StringBuilder();
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				sb.append(line + "\n");
+			}
+			is.close();
+			result = sb.toString();	            
+		} catch(Exception e) {
+			return null;
+		}
+ 
+		// Convert string to object
+		try {
+			jsonObject = new JSONObject(result);            
+		} catch(JSONException e) {
+			return null;
+		}
+    
+		return jsonObject;
+ 
+	}
 	
 	public class GetDataTask extends AsyncTask<Object, Void, JSONObject> {
 
 		@Override
 		protected JSONObject doInBackground(Object... params) {
-			int responseCode = -1;
-			JSONObject jsonResponse = null;
-			try {
-				URL blogFeedUsr = new URL(
-						"http://ylang-ylang.uninorte.edu.co:8080/promedioapp/read.php");
-				HttpURLConnection connection = (HttpURLConnection) blogFeedUsr
-						.openConnection();
-				connection.connect();
-
-				responseCode = connection.getResponseCode();
-
-				if (responseCode == HttpURLConnection.HTTP_OK) {
-					InputStream inputStram = connection.getInputStream();
-					Reader reader = new InputStreamReader(inputStram);
-					char[] charArray = new char[connection.getContentLength()];
-					reader.read(charArray);
-					String responseData = new String(charArray);
-					//Log.v(TAG,responseData);
-					jsonResponse = new JSONObject(responseData);
-				} else {
-				//	Log.i(TAG,
-				//			"Response code unsuccesfull "
-				//					+ String.valueOf(responseCode));
-				}
-			} catch (MalformedURLException e) {
-				//Log.e(TAG, "Exception", e);
-			} catch (IOException e) {
-				//Log.e(TAG, "Exception", e);
-			} catch (Exception e) {
-				//Log.e(TAG, "Exception", e);
-			}
-			return jsonResponse;
+			
+			return getJson("http://augustodesarrollador.com/promedio_app/read.php");
 		}
 		@Override
 		protected void onPostExecute(JSONObject result) {
